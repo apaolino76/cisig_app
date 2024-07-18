@@ -1,0 +1,97 @@
+/* HEADER */
+.bg-contatos {
+	background-color: black;
+	color: white;
+}
+
+.social-icon {
+  color: white;
+  /* font-size: 2rem; */
+  margin: 5px;
+}
+
+.bg-custom {
+	background: rgb(18, 57, 107);
+	font-size: 1.2rem;
+}
+
+/* Change the color in the stroke property of the image data */
+.custom-toggler .navbar-toggler-icon {
+	background-image: url("data:image/svg+xml;charset=utf8, %3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(245, 245, 245, 1)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E");
+}
+
+/* Set the border color to the desired color */
+.custom-toggler.navbar-toggler {
+    border-color: whitesmoke;
+}
+
+.custom-toggler.navbar-toggler:focus{
+	color: whitesmoke;
+}
+
+.nav-link {
+  border-radius: 5px;
+}
+
+.nav-link:hover {
+  background: #990000;
+  border-bottom: 2px solid white;
+  border-radius: 3px;
+}
+  
+  /* FOOTER */
+#main-footer {
+  background: rgb(40, 44, 63);
+	padding-top: 8vh;
+	padding-bottom: 8vh;
+
+}
+#main-footer h4 {
+	color: white;
+}
+
+.footer-links-list-solid,
+.footer-links-list a {
+	color: #b0b7f0;
+	text-decoration: none;
+}
+
+.footer-links-list a:hover {
+	opacity: 0.5;
+}
+
+.footer-links-list li {
+	list-style-type: none;
+}
+
+.footer-links-list span {
+	color: #fff;
+}
+
+.border-link {
+	border: 1px;
+	border-style: solid;
+	border-color: #b02726;
+	text-align: center;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	padding: 5px;
+	color: #b0b7f0;
+	text-decoration: none;
+}
+
+.border-link:hover,
+.border-link:hover a {
+	background-color: #b02726;
+	cursor: pointer;
+	color: #b0b7f0;
+}
+
+.testimonial-image {
+	width: 20vw;
+	border-radius: 100%;
+}
+
+button {
+	min-width: 20vw;
+}
