@@ -6,42 +6,42 @@ use App\Helpers\Financeiro\APIInter;
 use App\Helpers\Financeiro\PagamentosDAO;
 use App\Helpers\Util;
 use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 use function PHPUnit\Framework\isNull;
 
 class APIInterController extends Controller
 {
     private $appInter;
+    private $pagamentosDAO;
 
-    public function __construct(APIInter $apiService)
+    public function __construct(APIInter $apiService, PagamentosDAO $pagamentosDAO)
     {
-        $this->appInter = $apiService;
+        $this->appInter      = $apiService;
+        $this->pagamentosDAO = $pagamentosDAO;
     }
 
-    public function index(?string $reference = null): View
+    public function index(?string $reference = null): View | Response
     {
-        $competencia    = !isset($reference) ? date("Ym") : $reference;
-        $competenciaFrt = substr($competencia, 4, 2) . "/" . substr($competencia, 0, 4);
-        
-        $parameters = [
-            "dataInicial"   => date('Y-m-01', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
-            "dataFinal"     => date('Y-m-t', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
-            "tipoOrdenacao" => 'ASC',
-        ];
-        
-        $response   = $this->appInter->pegarTokenDeAcesso();
-        $token      = $response->access_token;    
-        $pagamentos = $this->appInter->pegarSumarioDePagamentosNoAppInter($token, $parameters);
-        $pagNegocio = $this->appInter->totalizarBoletosPorNegocio($token, intval($competencia), $pagamentos);
-                
-        return view('admin.financeiro.bancoInter.index', [
-            'competencia'    => $competencia,
-            'competenciaAnt' => Util::montaCompetencia($competencia, "-"),
-            'competenciaFrt' => "Competência : {$competenciaFrt}",
-            'competenciaPos' => Util::montaCompetencia($competencia, "+"),
-            'pagamentos'     => $pagNegocio,
-        ]);
+        try {
+            $competencia    = !isset($reference) ? date("Ym") : $reference;
+            $competenciaFrt = substr($competencia, 4, 2) . "/" . substr($competencia, 0, 4);
+            $parcelas       = $this->pagamentosDAO->buscarParcelaPorCompetencia(intval($competencia));
+            $pagNegocio     = $this->appInter->totalizarBoletosPorNegocio(intval($competencia), $parcelas);
+            return view('admin.financeiro.bancoInter.index', [
+                'competencia'    => $competencia,
+                'competenciaAnt' => Util::montaCompetencia($competencia, "-"),
+                'competenciaFrt' => "Competência : {$competenciaFrt}",
+                'competenciaPos' => Util::montaCompetencia($competencia, "+"),
+                'pagamentos'     => $pagNegocio,
+            ]);        
+        } catch (Exception $e) {
+            return redirect()
+                ->route('admin.home')
+                ->with(['pErro' => $e->getMessage()]);
+        }
     }
 }

@@ -92,6 +92,7 @@ class APIInter
 */
     }
 
+/*
     public function pegarSumarioDePagamentosNoAppInter($bearerToken, $parametros)
     {
         try {
@@ -104,31 +105,36 @@ class APIInter
             throw new Exception($e->getMessage());
         }
     }
+*/        
 
-    public function totalizarBoletosPorNegocio(string $token, int $competencia, array $pagamentos): array
+    public function totalizarBoletosPorNegocio(int $competencia, array $parcelas): array
     {
-        $array = [];
-//        var_dump($pagamentos);
-        foreach ($pagamentos as $pagamento) {
+        try {
+            $array = [];
+            $tiposDeParcela = ["RECEBIDO", "A_RECEBER", "MARCADO_RECEBIDO", "ATRASADO", "CANCELADO", "EXPIRADO", "FALHA_EMISSAO", "EM_PROCESSAMENTO"];
+            $token          = $this->pegarTokenDeAcesso();
             $parametros = [
                 "dataInicial"   => date('Y-m-01', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
                 "dataFinal"     => date('Y-m-t', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
-                "situacao"      => $pagamento->situacao,
                 "tipoOrdenacao" => 'ASC',
             ];
-            $result  = $this->pegarBoletosNoAppInter($token, $parametros);
-            $array[] = $this->contarBoletosPorNegocio($token, $competencia, $parametros, $result);
+            for ($i = 0; $i < count($tiposDeParcela); $i++) { 
+                $parametros["situacao"] = $tiposDeParcela[$i];
+                $pagamentos = $this->pegarBoletosNoAppInter($token->access_token, $parametros);
+                $array[]    = $this->contarBoletosPorNegocio($token->access_token, $parametros, $pagamentos->totalPaginas, $parcelas);
+            }
+            return $array;            
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
         }
-//        var_dump($array);
-        return $array;
     }
 
-    private function pegarBoletosNoAppInter($bearerToken, $parametros)
+    public function pegarBoletosNoAppInter(string $bearerToken, array $parametros)
     {
         try {
-            $bearer      = "Authorization: Bearer " . $bearerToken;
+            $bearer      = "Authorization: Bearer {$bearerToken}";
             $queryString = http_build_query($parametros);
-            $url         = "https://cdpj.partners.bancointer.com.br/cobranca/v3/cobrancas?". $queryString;
+            $url         = "https://cdpj.partners.bancointer.com.br/cobranca/v3/cobrancas?{$queryString}";
             $header      =  array($bearer, $this->paramCC, "Content-Type: application/json");
             return $this->consumirServicosInter($url, $header, "GET");
         } catch (Exception $e) {
@@ -136,29 +142,32 @@ class APIInter
         }
     }
 
-    private function contarBoletosPorNegocio(string $token, int $competencia, array $parametros, stdClass $result): array
+    private function contarBoletosPorNegocio(string $token, array $parametros, int $num_paginas, array $parcelas): array
     {
-//        var_dump($parametros["situacao"], $result->totalPaginas);
-        $quant = 0;
-        $valor = 0;
-        for ($i = 0; $i <= $result->totalPaginas - 1; $i++) {
-            $parametros["paginacao.paginaAtual"] = $i;
-            $items = $this->pegarBoletosNoAppInter($token, $parametros);
-            foreach ($items->cobrancas as $item) {
-                if (floatval($item->cobranca->valorNominal) != 2.50 ) {
-//                    var_dump($parametros["situacao"], $item->cobranca->pagador->nome, $item->cobranca->pagador->cpfCnpj, $item->cobranca->valorNominal);
-                    $aluno = $this->pagamentosDAO->buscarParcelaPorAlunoECompetencia($competencia, $item->cobranca->pagador->nome, $item->cobranca->pagador->cpfCnpj);
-                    if($aluno->count() > 0){
-                        $quant++;
-                        $valor += $item->cobranca->valorNominal;
+        try {
+            $quant = 0;
+            $valor = 0;
+            for ($i = 0; $i <= $num_paginas - 1; $i++) {
+                $parametros["paginacao.paginaAtual"] = $i;
+                $pagamentos = $this->pegarBoletosNoAppInter($token, $parametros);
+                foreach ($pagamentos->cobrancas as $item) {
+                    if (floatval($item->cobranca->valorNominal) != 2.50 ) {
+                        foreach ($parcelas as $parcela){
+                            if ($parcela->nome === $item->cobranca->pagador->nome && $parcela->cpf_resp_finan === $item->cobranca->pagador->cpfCnpj) {
+                                $quant++;
+                                $valor += $item->cobranca->valorNominal;
+                            }
+                        }
                     }
                 }
             }
+            return [
+                'situacao'   => $parametros["situacao"],
+                'quantidade' => $quant,
+                'valor'      => $valor,
+            ];
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
         }
-        return [
-            'situacao'   => $parametros["situacao"],
-            'quantidade' => $quant,
-            'valor'      => $valor,
-        ];
     }
 }

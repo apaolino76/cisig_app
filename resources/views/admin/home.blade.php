@@ -3,7 +3,7 @@
 @section('content')
     <div class="card">
         <div class="card-header nav-link">
-            <i class="fa-solid fa-house-chimney fa-fw fa-lg icone" aria-hidden="true"></i>{{ __('Dashboard') }}
+            <i class="fa-solid fa-house-chimney fa-fw fa-md mr-1" aria-hidden="true"></i>{{ __('Dashboard') }}
         </div>
 
         <div class="card-body nav-link">
@@ -12,7 +12,6 @@
                     {{ session('status') }}
                 </div>
             @endif
-
             {{ __('You are logged in!') }}
         </div>
     </div>

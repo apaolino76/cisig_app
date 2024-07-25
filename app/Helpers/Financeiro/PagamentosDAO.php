@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class PagamentosDAO
 {
 
-    public function buscarParcelaPorAlunoECompetencia(int $competencia, string $nome, string $cfpRespFinan)
+    public function buscarParcelaPorCompetencia(int $competencia)
     {
         try {            
             return DB::connection('mysql2')
@@ -27,8 +27,8 @@ class PagamentosDAO
                     'a.cpf_resp_finan',
                     'a.nome',
                 ])
-                ->where('a.nome', '=', $nome)
-                ->where('a.cpf_resp_finan', '=', $cfpRespFinan)
+//                ->where('a.nome', '=', $nome)
+//                ->where('a.cpf_resp_finan', '=', $cfpRespFinan)
                 ->whereNotIn('sa.cod_situacao_atual', [2, 3, 4, 5, 6, 7, 17])
                 ->where('p.tipo', '=', 1)
                 ->whereRaw('EXTRACT(YEAR_MONTH FROM p.data_vencimento) = ?', [$competencia])
@@ -39,7 +39,8 @@ class PagamentosDAO
                           ->whereColumn('sa1.matricula', 'ic.matricula');                    
                 })
                 ->orderBy('a.nome')
-                ->get();
+                ->get()
+                ->toArray();
 //                ->toSql();
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
