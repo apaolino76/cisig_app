@@ -44,4 +44,23 @@ class APIInterController extends Controller
                 ->with(['pErro' => $e->getMessage()]);
         }
     }
+
+    public function baixar(int $reference): Response
+    {
+        try {
+            $parcelas = $this->pagamentosDAO->buscarParcelaPorCompetencia($reference);
+            $result   = $this->appInter->pegarBoletosPagosNoAppInter($reference, $parcelas);
+            var_dump($result);
+/*            return redirect()
+                ->route('admin.financeiro.bancoInter.baixar', ['reference' => $reference])
+                ->with(['pSucesso' => "O token foi atribuído para a competência {$reference}!"]);
+*/                
+//            return response()->json(['success' => true, 'message' => "O token {$token->access_token} foi atribuído para a competência {$reference}!"]);
+        } catch (Exception $e) {
+            return redirect()
+                ->route('admin.financeiro.bancoInter.baixar', ['reference' => $reference])
+                ->with(['pErro' => $e->getMessage()]);                    
+//            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

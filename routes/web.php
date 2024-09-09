@@ -35,4 +35,9 @@ Route::group(['middleware' => 'auth'], function () {
     ->where([
         'reference', '[0-9]+',
     ]);
+    Route::get('/admin/financeiro/bancoInter/baixar/{reference}', [APIInterController::class, 'baixar'])
+    ->name('admin.financeiro.bancoInter.baixar')
+    ->where([
+        'reference', '[0-9]+',
+    ]);
 });

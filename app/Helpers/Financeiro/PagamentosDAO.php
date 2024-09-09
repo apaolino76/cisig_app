@@ -46,4 +46,32 @@ class PagamentosDAO
             throw new Exception($e->getMessage());
         }        
     }
+
+    public function baixarParcelasNoPrisma($item)
+    {
+        try {
+            $sql = "UPDATE aluno AS a INNER JOIN inscricao_curso AS ic ON a.codigo = ic.cod_aluno
+                                      INNER JOIN inscricao_periodo_letivo AS ip ON ic.matricula = ip.matricula
+                                                                                   AND ic.cod_periodo_letivo_ing = ip.cod_periodo_letivo
+                                      INNER JOIN parcelas_pgto AS pp ON ip.codigo = pp.cod_inscricao_periodo_letivo
+                    SET pp.data_pagamento = :param1,
+                        pp.cod_forma_pagamento = :param2,
+                        pp.valor_pago = :param3,
+                        pp.data_credito = :param4
+                    WHERE pp.codigo = :param5
+                          and a.nome = :param6
+                          and a.cpf_resp_finan = :param7";
+            return DB::update($sql, [
+                'param1' => $item->cobranca->dataSituacao,
+                'param2' => 43,
+                'param3' => floatval($item->cobranca->valorTotalRecebido),
+                'param4' => $item->cobranca->dataSituacao,
+                'param5' => intval($item->cobranca->seuNumero),
+                'param6' => $item->cobranca->pagador->nome,
+                'param7' => $item->cobranca->pagador->cpfCnpj,
+            ]);
+        } catch (Exception $e) {
+          throw new Exception($e->getMessage());
+        }
+      }
 }

@@ -7,6 +7,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use PhpParser\JsonDecoder;
+use PhpParser\Node\Expr\Cast\Int_;
 use stdClass;
 
 class APIInter
@@ -92,21 +93,6 @@ class APIInter
 */
     }
 
-/*
-    public function pegarSumarioDePagamentosNoAppInter($bearerToken, $parametros)
-    {
-        try {
-            $bearer      = "Authorization: Bearer " . $bearerToken;
-            $queryString = http_build_query($parametros);
-            $url         = "https://cdpj.partners.bancointer.com.br/cobranca/v3/cobrancas/sumario?". $queryString;
-            $header      =  array($bearer, $this->paramCC, "Content-Type: application/json");
-            return $this->consumirServicosInter($url, $header, "GET");
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage());
-        }
-    }
-*/        
-
     public function totalizarBoletosPorNegocio(int $competencia, array $parcelas): array
     {
         try {
@@ -127,6 +113,25 @@ class APIInter
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
         }
+    }
+
+    public function pegarBoletosPagosNoAppInter(int $competencia, array $parcelas)
+    {
+        try {
+            $token      = $this->pegarTokenDeAcesso();
+            $parametros = [
+                "dataInicial"   => date('Y-m-01', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
+                "dataFinal"     => date('Y-m-t', strtotime(substr($competencia, 0, 4) . "-" . substr($competencia, 4, 2))),
+                "situacao"      => 'RECEBIDO',
+                "tipoOrdenacao" => 'ASC',
+            ];
+            $pagamentos = $this->pegarBoletosNoAppInter($token->access_token, $parametros);            
+            return $this->baixarBoletosNoPrisma($token->access_token, $parametros, $pagamentos->totalPaginas, $parcelas);
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+
+
     }
 
     public function pegarBoletosNoAppInter(string $bearerToken, array $parametros)
@@ -166,6 +171,32 @@ class APIInter
                 'quantidade' => $quant,
                 'valor'      => $valor,
             ];
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    private function baixarBoletosNoPrisma(string $token, array $parametros, int $num_paginas, array $parcelas): int
+    {
+        try {
+            $quant = 0;
+            for ($i = 0; $i <= $num_paginas - 1; $i++) {
+                $parametros["paginacao.paginaAtual"] = $i;
+                $pagamentos = $this->pegarBoletosNoAppInter($token, $parametros);
+                foreach ($pagamentos->cobrancas as $item) {
+                    if (floatval($item->cobranca->valorNominal) != 2.50 ) {
+                        foreach ($parcelas as $parcela){
+                            if ($parcela->nome === $item->cobranca->pagador->nome && $parcela->cpf_resp_finan === $item->cobranca->pagador->cpfCnpj) {
+                                $result = $this->pagamentosDAO->baixarParcelasNoPrisma($item);
+                                if ($result > 0) {
+                                    $quant++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return $quant;
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
         }

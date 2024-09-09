@@ -13,16 +13,30 @@
         </div>
         <div class="card-body">
             <div class="row mb-2">
-                <div class="col-12 d-flex flex-column flex-md-row">
-                    <a href="#" class="btn btn-info text-white mb-1 mb-md-0 mr-md-1" tabindex="-1" role="button" aria-disabled="true">
-                        <i class="fa fa-download fa-fw fa-md mr-1"></i>Baixar
-                    </a>
+                <div class="col-6 col-md-12 d-flex flex-column flex-md-row">
+                    <button id="baixar" class="btn btn-info text-white mb-1 mb-md-0 mr-md-1">
+                        <i class="fa fa-download fa-fw fa-md" aria-hidden="true" data-toggle="tooltip" data-placement="left" title="Baixar Parcelas"></i>                        
+                    </button>
+<!--
                     <a href="#" class="btn btn-info text-white mb-1 mb-md-0 mr-md-1" tabindex="-1" role="button" aria-disabled="true">
                         <i class="fa fa-upload fa-fw fa-md mr-1"></i>Gerar
                     </a>
                     <a href="#" class="btn btn-info text-white" tabindex="-1" role="button" aria-disabled="true">
                         <i class="fa fa-circle-xmark fa-fw fa-md mr-1"></i>Cancelar
                     </a>
+-->
+                    <div class="modal fade" id="processamentoModal" tabindex="-1" role="dialog" aria-labelledby="processamentoModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-body text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="sr-only">Carregando...</span>
+                                    </div>
+                                    <p>Aguade! Esse processamento poderá levar alguns segundos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="row mb-2">
@@ -48,12 +62,14 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="d-flex flex-column">
-                                                    <button type="button" class="btn btn-primary text-right mb-1">
-                                                        Valor <span class="badge bg-secondary">{{ 'R$ '. number_format($pagamento["valor"], 2, ",", ".") }}</span>
-                                                    </button>
-                                                    <button type="button" class="btn btn-primary text-right">
-                                                        Quant. <span class="badge bg-secondary">{{ $pagamento["quantidade"] }}</span>
-                                                    </button>
+                                                    <div class="text-right">
+                                                        <i class="fa-solid fa-people-group fa-fw fa-md" aria-hidden="true"></i>
+                                                        <span>{{ $pagamento["quantidade"] }}</span>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <i class="fa-solid fa-brazilian-real-sign fa-fw fa-md" aria-hidden="true"></i>
+                                                        <span>{{ number_format($pagamento["valor"], 2, ",", ".") }}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -71,3 +87,27 @@
         </div>
     </div>
 @endsection
+
+@prepend('scripts')
+    $('#baixar').on('click', function() {
+        // Mostrar o modal de carregamento
+        $('#processamentoModal').modal('show');
+
+        // Fazer a requisição AJAX
+        $.ajax({
+            url: '{{ route('admin.financeiro.bancoInter.baixar', ['reference' => $competencia]) }}',
+            method: 'GET',
+            data: {
+                _token: '{{ csrf_token() }}' // Adicionar o token CSRF
+            },
+            success: function() {
+                // Fechar o modal de carregamento
+                $('#processamentoModal').modal('hide');
+            },
+            error: function() {
+                // Fechar o modal de carregamento em caso de erro
+                $('#processamentoModal').modal('hide');
+            }
+        });
+    });
+@endprepend
